@@ -51,7 +51,6 @@ import { Rasterizer } from './rasterizer.js';
   
 // take 3 vertices defining a solid triangle and rasterize to framebuffer
 Rasterizer.prototype.drawTriangle = function(v1, v2, v3) {
-  // Extract vertex coordinates and colors
   const [x1, y1, [r1, g1, b1]] = v1;
   const [x2, y2, [r2, g2, b2]] = v2;
   const [x3, y3, [r3, g3, b3]] = v3;
@@ -67,22 +66,20 @@ Rasterizer.prototype.drawTriangle = function(v1, v2, v3) {
   // Iterate over pixels in the bounding box
   for (let pixelX = xMin; pixelX <= xMax; pixelX++) {
     for (let pixelY =yMin; pixelY <= yMax; pixelY++) {    
-      let condition1=pointIsInsideTriangle(v1,v2,v3,[pixelX,pixelY]);
-      let condition2=pointIsInsideTriangle(v3,v1,v2,[pixelX,pixelY]);
-      let condition3=pointIsInsideTriangle(v2,v3,v1,[pixelX,pixelY]);
-      // Check if the pixel is inside the triangle
+      //call vertices in counter-clockwise fashion
+      let condition1 = pointIsInsideTriangle(v1, v2, v3, [pixelX, pixelY]);
+      let condition2 = pointIsInsideTriangle(v3, v1, v2, [pixelX, pixelY]);
+      let condition3 = pointIsInsideTriangle(v2, v3, v1, [pixelX, pixelY]);
+
+      // Check if the pixel is inside the triangle and resulting condition is true
       if (condition1 && condition2 && condition3) {
-        // Calculate barycentric coordinates
         const barycentric = calculateBarycentricCoordinates(v1, v2, v3, [pixelX, pixelY]);
-    
-        // Interpolate color
         const interpolatedColors = [
             r1 * barycentric[0] + r2 * barycentric[1] + r3 * barycentric[2],
             g1 * barycentric[0] + g2 * barycentric[1] + g3 * barycentric[2],
             b1 * barycentric[0] + b2 * barycentric[1] + b3 * barycentric[2],
         ];
     
-        // Set the color of the pixel
         this.setPixel(pixelX,pixelY, interpolatedColors);
     }
     }
@@ -113,42 +110,30 @@ function calculateBarycentricCoordinates(v1, v2, v3, p) {
 
 
 function pointIsInsideTriangle(v1,v2,topedgepoint,p){
-  const x1 = v1[0];
-  const y1 = v1[1];
-  const x2 = v2[0];
-  const y2 = v2[1];
-  const checkEdge=v2-v1;
-  const topedgeCase=topedgepoint[1];
-  const pointX = p[0];
-  const pointY = p[1];
-  let conditionL1=false;
-  let a=y2-y1;
-  let b=x1-x2;
-  let c=(x2*y1)-(x1*y2);
-  if((a*pointX)+(b*pointY)+c>0)
-  {
-    conditionL1=true;
-  }
-  else if((a*pointX)+(b*pointY)+c===0)
-  {
-    if(checkEdge[0]<0 || checkEdge[1]<0){
-      conditionL1=true;
+  
+    const x1 = v1[0];
+    const y1 = v1[1];
+    const x2 = v2[0];
+    const y2 = v2[1];
+    const checkEdge = [x2 - x1, y2 - y1];
+    const topedgeCase = topedgepoint[1];
+    const pointX = p[0];
+    const pointY = p[1];
+    let conditionL1 = false;
+    let a = y2 - y1;
+    let b = x1 - x2;
+    let c = x2 * y1 - x1 * y2;
+    
+    if ((a * pointX) + (b * pointY) + c > 0) {
+      conditionL1 = true;
+    } 
+    //top edge and left edge case
+    else if ((a * pointX) + (b * pointY) + c === 0) {
+      if (checkEdge[0] < 0 || checkEdge[1] < 0) {
+        conditionL1 = true;
+      }
     }
-    //
-    //condition if its top edge, edge exactly horizontal and above other edges
-    // if(y1===y2 && y1>topedgeCase)
-    // {
-    //   conditionL1=true;
-    // }
-    // if((x1<x2 && y1>y2) || (x2<x1 && y2>y1))
-    // {
-    //   conditionL1=true;
-    // }
-    //condition if its left edge, edge not exactly horizontal and is on the left side of the triangle. Triangle can have one or two "left edges"
-    conditionL1=true;
-  }
-
-
+    
   return conditionL1;
 
 }
